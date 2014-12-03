@@ -13,7 +13,8 @@ from diaspy import *
 import argparse
 import os, os.path
 import sys,string
-SITE_URL="https://home.tuxfarm.org/blog/"
+import time
+SITE_URL="https://www.tuxfarm.org/blog/"
 PUBLISHEDFILENAME = "published.txt";
 
 parser = argparse.ArgumentParser(description="Processes Pelican Markdown article to publish them to Diaspora*")
@@ -66,6 +67,7 @@ for root,dirs, files in os.walk(os.path.join(args.directory,"content")):
 					tags=[]
 					webpage = ""
 					cat = ""
+					publishdate = time.strftime('%Y-%m-%d %H:%M',time.localtime()) 
 					# Start a kind of header mapping
 					# Use Category as filter if defined in command line
 					# Rebuild Web URL
@@ -79,6 +81,8 @@ for root,dirs, files in os.walk(os.path.join(args.directory,"content")):
 								tags = map(lambda a: "#%s"%a.strip(), l[len('Tags:'):].strip().split(","))
 							if l.startswith('Slug:'):
 								webpage = "%s%s.html"%(SITE_URL,l[len('Slug:'):].strip())
+							if l.startswith("Date:"):
+								publishdate = l[len("Date:"):].strip()
 							if l.startswith('Summary:'):
 								starttext = True
 								text = l[len('Summary:'):].strip()
@@ -89,14 +93,14 @@ for root,dirs, files in os.walk(os.path.join(args.directory,"content")):
 					if not(args.categories) or (cat in args.categories):
 						# Add only if published
 						inpub.append(f)
-						print "Post article ",f,"\n\tTags : ",string.join(tags,", "),"\n\tCategory :",cat,"\n\tweb :",webpage
-						text = text + "\n\nTags : "+string.join(tags,", ")+"\n\nURL : "+webpage
+						print "Post article ",f,"\n\tInitial publish date : ",publishdate,"\n\tTags : ",string.join(tags,", "),"\n\tCategory :",cat,"\n\tweb :",webpage
+						text = text + "\n\nTags : "+string.join(tags,", ")+"\n\nURL : "+webpage+"\n\nInitial publish date : "+publishdate
 						#print text
 						flux.post(text=text)
 			else:
 				print "Already published ",f
 # Regenerate record of what we published
-with open(PUBLISHEDFILENAME,"w") as pubfiles :	
+with open(PUBLISHEDFILENAME,"w") as pubfiles :
 	for fn in published+inpub:
 		pubfiles.write("%s\n"%fn)
 	pubfiles.close()
